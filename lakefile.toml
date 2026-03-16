@@ -8,3 +8,7 @@ name = "Cubical"
 [[lean_exe]]
 name = "cubical"
 root = "Main"
+
+[[require]]
+name = "mathlib4"
+scope = "leanprover-community"
