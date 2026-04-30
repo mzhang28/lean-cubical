@@ -3,6 +3,8 @@ import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Finset.Union
 import Mathlib.Data.Sum.Order
 
+namespace Clause
+
 @[ext, grind]
 structure Clause (n : ℕ) where
   pos : Finset (Fin n)
@@ -30,8 +32,11 @@ def clauseAntichain (s : Finset (Clause n)) : Finset (Clause n) :=
 def clauseProduct (x y : Finset (Clause n)) : Finset (Clause n) :=
   x.biUnion (fun xx => y.image (fun yy => Clause.mk (xx.pos ∪ yy.pos) (xx.neg ∪ yy.neg)))
 
+scoped infixl:70 " ⊗ " => clauseProduct
+scoped notation:max "⌊" s "⌋" => clauseAntichain s
+
 @[simp]
-lemma clauseProduct_assoc (a b c : Finset (Clause n)) : clauseProduct (clauseProduct a b) c = clauseProduct a (clauseProduct b c) := by
+lemma clauseProduct_assoc (a b c : Finset (Clause n)) : (a ⊗ b) ⊗ c = a ⊗ (b ⊗ c) := by
   ext x
   unfold clauseProduct
   simp only [Finset.mem_biUnion, Finset.mem_image, exists_exists_and_exists_and_eq_and, Finset.union_assoc]
@@ -60,7 +65,7 @@ lemma Clause.exists_minimal_le (s : Finset (Clause n)) (x : Clause n) (hx : x �
   repeat constructor <;> grind only [Finset.eq_of_subset_of_card_le]
 
 @[simp]
-lemma clauseAntichain_smaller : clauseAntichain s ⊆ s := by
+lemma clauseAntichain_smaller : ⌊ s ⌋ ⊆ s := by
   grind only [= Finset.subset_iff, clauseAntichain, = Finset.mem_filter]
 
 lemma exists_antichain_le (s : Finset (Clause n)) (x : Clause n) (hx : x ∈ s) : ∃ y ∈ clauseAntichain s, y ≤ x := by
@@ -177,3 +182,5 @@ def Clause.toLex (c : Clause n) : List (Fin n ⊕ Fin n) :=
   (c.pos.sort (· ≤ ·)).map Sum.inl ++ (c.neg.sort (· ≤ ·)).map Sum.inr
 
 def clauseLexLe (x y : Clause n) : Prop := x.toLex ≤ y.toLex
+
+end Clause

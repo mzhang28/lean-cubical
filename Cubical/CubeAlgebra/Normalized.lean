@@ -5,6 +5,8 @@ import Mathlib.Data.Sum.Order
 
 import Cubical.CubeAlgebra.Normalized.Clause
 
+open Clause
+
 -- this is the normalized implementation
 -- thus no need for a quotient
 -- downstream should use this
@@ -23,10 +25,10 @@ instance : PartialOrder (DMN n) where
 
 @[grind]
 def dmnMeet (x y : DMN n) : DMN n :=
-  DMN.mk (clauseAntichain (clauseProduct x.clauses y.clauses)) (by grind only [clauseAntichain, = Finset.mem_filter])
+  DMN.mk ⌊ x.clauses ⊗ y.clauses ⌋ (by grind only [clauseAntichain, = Finset.mem_filter])
 
 @[grind]
-def dmnTrue : DMN n := DMN.mk (clauseAntichain {Clause.mk ∅ ∅}) (by grind only [clauseAntichain, = Finset.mem_filter, = Finset.mem_singleton])
+def dmnTrue : DMN n := DMN.mk ⌊ {Clause.mk ∅ ∅} ⌋ (by grind only [clauseAntichain, = Finset.mem_filter, = Finset.mem_singleton])
 
 @[simp]
 lemma dmnTrue_clauses : (dmnTrue : DMN n).clauses = {Clause.mk ∅ ∅} := by
@@ -69,12 +71,12 @@ instance : CommMonoid (DMN n) where
 
 def dmnJoin (x y : DMN n) : DMN n :=
   let unioned := x.clauses ∪ y.clauses
-  DMN.mk (clauseAntichain unioned) (by grind only [clauseAntichain, = Finset.mem_filter])
+  DMN.mk ⌊ unioned ⌋ (by grind only [clauseAntichain, = Finset.mem_filter])
 
 -- TODO: implement a more efficient data structure that isn't O(2^n) :skull:
 def clauseInv (c : Clause n) : DMN n :=
   let pos_inv := c.pos.image (fun p => Clause.mk ∅ {p})
   let neg_inv := c.neg.image (fun n => Clause.mk {n} ∅)
-  DMN.mk (clauseAntichain (pos_inv ∪ neg_inv)) (by grind only [clauseAntichain, = Finset.mem_filter])
+  DMN.mk ⌊pos_inv ∪ neg_inv ⌋ (by grind only [clauseAntichain, = Finset.mem_filter])
 
 def dmnInv (x : DMN n) : DMN n := x.clauses.prod clauseInv
