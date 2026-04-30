@@ -3,7 +3,7 @@ import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Finset.Union
 import Mathlib.Data.Sum.Order
 
-import Cubical.CubeAlgebra.Normalized.Clause
+import Cubical.Cubes.Normalized.Clause
 
 open ClauseStuff
 
