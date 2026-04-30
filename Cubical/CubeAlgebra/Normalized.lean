@@ -23,51 +23,47 @@ instance : PartialOrder (DMN n) where
   le_trans := by grind only
   le_antisymm := by grind only [DMN.ext_iff]
 
-@[grind]
+@[simp]
 def dmnMeet (x y : DMN n) : DMN n :=
   DMN.mk ⌊ x.clauses ⊗ y.clauses ⌋ (by grind only [clauseAntichain, = Finset.mem_filter])
 
-@[grind]
+@[simp]
 def dmnTrue : DMN n := DMN.mk ⌊ {Clause.mk ∅ ∅} ⌋ (by grind only [clauseAntichain, = Finset.mem_filter, = Finset.mem_singleton])
 
 @[simp]
 lemma dmnTrue_clauses : (dmnTrue : DMN n).clauses = {Clause.mk ∅ ∅} := by
   grind only [dmnTrue, clauseAntichain, = Finset.mem_filter, = Finset.mem_singleton]
 
+@[simp]
+lemma DMN.antichain_self (x : DMN n) : ⌊ x.clauses ⌋ = x.clauses := clauseAntichain_eq_self x.antichain
+
 instance : CommMonoid (DMN n) where
   one := dmnTrue
   mul := dmnMeet
 
   one_mul := by
-    intros a
-    ext x
-    change x ∈ (dmnMeet dmnTrue a).clauses ↔ x ∈ a.clauses
-    unfold dmnMeet clauseAntichain clauseProduct
-    simp only [dmnTrue_clauses, Finset.singleton_biUnion, Finset.empty_union, Finset.image_id', Finset.mem_filter, and_iff_left_iff_imp]
-    grind only
+    intro a
+    change dmnMeet dmnTrue a = a
+    ext
+    simp only [dmnMeet, dmnTrue, Finset.mem_singleton, forall_eq, Std.le_refl, imp_self, clauseAntichain_eq_self, clauseProduct_comm, clauseProduct_one_right, DMN.antichain_self]
 
   mul_one := by
-    intros a
-    ext x
-    change x ∈ (dmnMeet a dmnTrue).clauses ↔ x ∈ a.clauses
-    unfold dmnMeet clauseAntichain clauseProduct
-    simp only [dmnTrue_clauses, Finset.image_singleton, Finset.union_empty, Finset.mem_biUnion, Finset.mem_singleton, exists_eq_right', Finset.mem_filter, and_iff_left_iff_imp]
-    grind only
+    intro a
+    change dmnMeet a dmnTrue = a
+    ext
+    simp only [dmnMeet, dmnTrue, Finset.mem_singleton, forall_eq, Std.le_refl, imp_self, clauseAntichain_eq_self, clauseProduct_one_right, DMN.antichain_self]
 
   mul_assoc := by
     intros a b c
     change dmnMeet (dmnMeet a b) c = dmnMeet a (dmnMeet b c)
-    ext x
-    unfold dmnMeet
-    simp only [clauseAntichain_clauseProduct_left, clauseProduct_assoc, clauseAntichain_clauseProduct_right]
+    ext
+    simp only [dmnMeet, clauseAntichain_clauseProduct_left, clauseProduct_assoc, clauseAntichain_clauseProduct_right]
 
   mul_comm := by
     intros a b
     change dmnMeet a b = dmnMeet b a
     ext
-    unfold dmnMeet clauseProduct
-    simp only
-    grind
+    simp only [dmnMeet, clauseProduct_comm]
 
 def dmnJoin (x y : DMN n) : DMN n :=
   let unioned := x.clauses ∪ y.clauses

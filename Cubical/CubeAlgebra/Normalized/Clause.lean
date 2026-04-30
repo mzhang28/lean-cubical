@@ -42,6 +42,29 @@ lemma clauseProduct_assoc (a b c : Finset (Clause n)) : (a ⊗ b) ⊗ c = a ⊗ 
   simp only [Finset.mem_biUnion, Finset.mem_image, exists_exists_and_exists_and_eq_and, Finset.union_assoc]
 
 @[simp]
+lemma clauseProduct_one_left (A : Finset (Clause n)) :
+    {Clause.mk ∅ ∅} ⊗ A = A := by
+  ext x
+  simp only [clauseProduct, Finset.singleton_biUnion, Finset.empty_union, Finset.image_id']
+
+@[simp]
+lemma clauseProduct_one_right (A : Finset (Clause n)) :
+    A ⊗ {Clause.mk ∅ ∅} = A := by
+  ext x
+  simp only [clauseProduct, Finset.image_singleton, Finset.union_empty, Finset.mem_biUnion, Finset.mem_singleton, exists_eq_right']
+
+@[simp]
+lemma clauseProduct_comm (A B : Finset (Clause n)) :
+    A ⊗ B = B ⊗ A := by
+  ext x
+  simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image]
+  constructor
+  · rintro ⟨a, ha, b, hb, rfl⟩
+    exact ⟨b, hb, a, ha, by ext <;> simp only [Finset.union_comm, Finset.mem_union]⟩
+  · rintro ⟨b, hb, a, ha, rfl⟩
+    exact ⟨a, ha, b, hb, by ext <;> simp only [Finset.union_comm, Finset.mem_union]⟩
+
+@[simp]
 lemma Clause.union_le_union_right (a b c : Clause n) (h : a ≤ b) : Clause.mk (a.pos ∪ c.pos) (a.neg ∪ c.neg) ≤ Clause.mk (b.pos ∪ c.pos) (b.neg ∪ c.neg) :=
   ⟨Finset.union_subset_union h.1 (fun _ hx => hx), Finset.union_subset_union h.2 (fun _ hx => hx)⟩
 
