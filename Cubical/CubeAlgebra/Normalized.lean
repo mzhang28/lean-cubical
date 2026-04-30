@@ -5,7 +5,7 @@ import Mathlib.Data.Sum.Order
 
 import Cubical.CubeAlgebra.Normalized.Clause
 
-open Clause
+open ClauseStuff
 
 -- this is the normalized implementation
 -- thus no need for a quotient

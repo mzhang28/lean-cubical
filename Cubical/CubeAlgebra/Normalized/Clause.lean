@@ -3,7 +3,7 @@ import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Finset.Union
 import Mathlib.Data.Sum.Order
 
-namespace Clause
+namespace ClauseStuff
 
 @[ext, grind]
 structure Clause (n : ℕ) where
@@ -73,106 +73,65 @@ lemma exists_antichain_le (s : Finset (Clause n)) (x : Clause n) (hx : x ∈ s) 
   use y
   grind only [clauseAntichain, = Finset.mem_filter]
 
+lemma clauseAntichain_eq_of_dominate (A B : Finset (Clause n))
+    (h_sub : A ⊆ B)
+    (h_dom : ∀ b ∈ B, ∃ a ∈ A, a ≤ b) :
+    ⌊ A ⌋ = ⌊ B ⌋ := by
+  ext x
+  repeat constructor <;> grind only [= Finset.subset_iff, clauseAntichain, = Finset.mem_filter]
+
+lemma clauseProduct_subset_left (A B C : Finset (Clause n)) (h : A ⊆ B) :
+    A ⊗ C ⊆ B ⊗ C := by
+  grind only [= Finset.subset_iff, clauseProduct, = Finset.mem_biUnion]
+
+lemma clauseProduct_dominate_left (A C : Finset (Clause n)) :
+    ∀ p ∈ A ⊗ C, ∃ p' ∈ ⌊ A ⌋ ⊗ C, p' ≤ p := by
+  intros p hp
+  unfold clauseProduct at hp ⊢
+  simp only [Finset.mem_biUnion, Finset.mem_image] at hp ⊢
+  rcases hp with ⟨a, ha, c, hc, rfl⟩
+  obtain ⟨a_min, ha_min, h_le⟩ := exists_antichain_le A a ha
+  use Clause.mk (a_min.pos ∪ c.pos) (a_min.neg ∪ c.neg)
+  constructor
+  · exact ⟨a_min, ha_min, c, hc, rfl⟩
+  · exact Clause.union_le_union_right a_min a c h_le
+
 @[simp]
 lemma clauseAntichain_clauseProduct_left (a b : Finset (Clause n)) : clauseAntichain (clauseProduct (clauseAntichain a) b) = clauseAntichain (clauseProduct a b) := by
-  ext x
-  simp only [clauseAntichain, Finset.mem_filter]
-  constructor
-  · rintro ⟨hx, hmin⟩
-    have hx_in : x ∈ clauseProduct a b := by
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image] at hx ⊢
-      rcases hx with ⟨ca, hca, cb, hcb, rfl⟩
-      exact ⟨ca, clauseAntichain_smaller hca, cb, hcb, rfl⟩
-    refine ⟨hx_in, fun y hy hyx => ?_⟩
-    have hy_copy := hy
-    simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image] at hy_copy
-    rcases hy_copy with ⟨ya, hya, yb, hyb, rfl⟩
-    obtain ⟨ya_min, hya_min, hya_le⟩ := exists_antichain_le a ya hya
-    have h_y_min_in : Clause.mk (ya_min.pos ∪ yb.pos) (ya_min.neg ∪ yb.neg) ∈ clauseProduct (clauseAntichain a) b := by
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image]
-      exact ⟨ya_min, hya_min, yb, hyb, rfl⟩
-    have h_y_min_le_y : Clause.mk (ya_min.pos ∪ yb.pos) (ya_min.neg ∪ yb.neg) ≤ Clause.mk (ya.pos ∪ yb.pos) (ya.neg ∪ yb.neg) :=
-      Clause.union_le_union_right ya_min ya yb hya_le
-    have h_y_min_le_x : Clause.mk (ya_min.pos ∪ yb.pos) (ya_min.neg ∪ yb.neg) ≤ x := le_trans h_y_min_le_y hyx
-    have h_eq := hmin _ h_y_min_in h_y_min_le_x
-    have h_y_le_y_min : Clause.mk (ya.pos ∪ yb.pos) (ya.neg ∪ yb.neg) ≤ Clause.mk (ya_min.pos ∪ yb.pos) (ya_min.neg ∪ yb.neg) := by grind only
-      -- rw [h_eq]
-      -- exact hyx
-    grind only
-  · rintro ⟨hx, hmin⟩
-    have hx_copy := hx
-    simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image] at hx_copy
-    rcases hx_copy with ⟨ca, hca, cb, hcb, rfl⟩
-    obtain ⟨ca_min, hca_min, hca_le⟩ := exists_antichain_le a ca hca
-    have h_min_in : Clause.mk (ca_min.pos ∪ cb.pos) (ca_min.neg ∪ cb.neg) ∈ clauseProduct a b := by
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image]
-      exact ⟨ca_min, clauseAntichain_smaller hca_min, cb, hcb, rfl⟩
-    have h_le_x : Clause.mk (ca_min.pos ∪ cb.pos) (ca_min.neg ∪ cb.neg) ≤ Clause.mk (ca.pos ∪ cb.pos) (ca.neg ∪ cb.neg) :=
-      Clause.union_le_union_right ca_min ca cb hca_le
-    have h_eq := hmin _ h_min_in h_le_x
-    have hx_anti : Clause.mk (ca.pos ∪ cb.pos) (ca.neg ∪ cb.neg) ∈ clauseProduct (clauseAntichain a) b := by
-      -- rw [← h_eq]
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image]
-      grind only
-    refine ⟨hx_anti, fun y hy hyx => ?_⟩
-    have hy_prod : y ∈ clauseProduct a b := by
-      have hy_copy := hy
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image] at hy_copy
-      rcases hy_copy with ⟨ya, hya, yb, hyb, rfl⟩
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image]
-      exact ⟨ya, clauseAntichain_smaller hya, yb, hyb, rfl⟩
-    exact hmin y hy_prod hyx
+  apply clauseAntichain_eq_of_dominate
+  · exact clauseProduct_subset_left _ _ _ clauseAntichain_smaller
+  · exact clauseProduct_dominate_left a b
 
 @[simp]
 lemma Clause.union_le_union_left (a b c : Clause n) (h : b ≤ c) : Clause.mk (a.pos ∪ b.pos) (a.neg ∪ b.neg) ≤ Clause.mk (a.pos ∪ c.pos) (a.neg ∪ c.neg) :=
   ⟨Finset.union_subset_union (fun _ hx => hx) h.1, Finset.union_subset_union (fun _ hx => hx) h.2⟩
 
+lemma clauseProduct_subset_right (A B C : Finset (Clause n)) (h : B ⊆ C) :
+    A ⊗ B ⊆ A ⊗ C := by
+  intro p hp
+  unfold clauseProduct at hp ⊢
+  simp only [Finset.mem_biUnion, Finset.mem_image] at hp ⊢
+  rcases hp with ⟨a, ha, b, hb, rfl⟩
+  have hc : b ∈ C := h hb
+  exact ⟨a, ha, b, hc, rfl⟩
+
+lemma clauseProduct_dominate_right (A C : Finset (Clause n)) :
+    ∀ p ∈ A ⊗ C, ∃ p' ∈ A ⊗ ⌊ C ⌋, p' ≤ p := by
+  intros p hp
+  unfold clauseProduct at hp ⊢
+  simp only [Finset.mem_biUnion, Finset.mem_image] at hp ⊢
+  rcases hp with ⟨a, ha, c, hc, rfl⟩
+  obtain ⟨c_min, hc_min, h_le⟩ := exists_antichain_le C c hc
+  use Clause.mk (a.pos ∪ c_min.pos) (a.neg ∪ c_min.neg)
+  constructor
+  · exact ⟨a, ha, c_min, hc_min, rfl⟩
+  · exact Clause.union_le_union_left a c_min c h_le
+
 @[simp]
 lemma clauseAntichain_clauseProduct_right (a b : Finset (Clause n)) : clauseAntichain (clauseProduct a (clauseAntichain b)) = clauseAntichain (clauseProduct a b) := by
-  ext x
-  simp only [clauseAntichain, Finset.mem_filter]
-  constructor
-  · rintro ⟨hx, hmin⟩
-    have hx_in : x ∈ clauseProduct a b := by
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image] at hx ⊢
-      rcases hx with ⟨ca, hca, cb, hcb, rfl⟩
-      exact ⟨ca, hca, cb, clauseAntichain_smaller hcb, rfl⟩
-    refine ⟨hx_in, fun y hy hyx => ?_⟩
-    have hy_copy := hy
-    simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image] at hy_copy
-    rcases hy_copy with ⟨ya, hya, yb, hyb, rfl⟩
-    obtain ⟨yb_min, hyb_min, hyb_le⟩ := exists_antichain_le b yb hyb
-    have h_y_min_in : Clause.mk (ya.pos ∪ yb_min.pos) (ya.neg ∪ yb_min.neg) ∈ clauseProduct a (clauseAntichain b) := by
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image]
-      exact ⟨ya, hya, yb_min, hyb_min, rfl⟩
-    have h_y_min_le_y : Clause.mk (ya.pos ∪ yb_min.pos) (ya.neg ∪ yb_min.neg) ≤ Clause.mk (ya.pos ∪ yb.pos) (ya.neg ∪ yb.neg) :=
-      Clause.union_le_union_left ya yb_min yb hyb_le
-    have h_y_min_le_x : Clause.mk (ya.pos ∪ yb_min.pos) (ya.neg ∪ yb_min.neg) ≤ x := le_trans h_y_min_le_y hyx
-    have h_eq := hmin _ h_y_min_in h_y_min_le_x
-    have h_y_le_y_min : Clause.mk (ya.pos ∪ yb.pos) (ya.neg ∪ yb.neg) ≤ Clause.mk (ya.pos ∪ yb_min.pos) (ya.neg ∪ yb_min.neg) := by grind only
-    grind only
-  · rintro ⟨hx, hmin⟩
-    have hx_copy := hx
-    simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image] at hx_copy
-    rcases hx_copy with ⟨ca, hca, cb, hcb, rfl⟩
-    obtain ⟨cb_min, hcb_min, hcb_le⟩ := exists_antichain_le b cb hcb
-    have h_min_in : Clause.mk (ca.pos ∪ cb_min.pos) (ca.neg ∪ cb_min.neg) ∈ clauseProduct a b := by
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image]
-      exact ⟨ca, hca, cb_min, clauseAntichain_smaller hcb_min, rfl⟩
-    have h_le_x : Clause.mk (ca.pos ∪ cb_min.pos) (ca.neg ∪ cb_min.neg) ≤ Clause.mk (ca.pos ∪ cb.pos) (ca.neg ∪ cb.neg) :=
-      Clause.union_le_union_left ca cb_min cb hcb_le
-    have h_eq := hmin _ h_min_in h_le_x
-    have hx_anti : Clause.mk (ca.pos ∪ cb.pos) (ca.neg ∪ cb.neg) ∈ clauseProduct a (clauseAntichain b) := by
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image]
-      grind only
-    refine ⟨hx_anti, fun y hy hyx => ?_⟩
-    have hy_prod : y ∈ clauseProduct a b := by
-      have hy_copy := hy
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image] at hy_copy
-      rcases hy_copy with ⟨ya, hya, yb, hyb, rfl⟩
-      simp only [clauseProduct, Finset.mem_biUnion, Finset.mem_image]
-      exact ⟨ya, hya, yb, clauseAntichain_smaller hyb, rfl⟩
-    exact hmin y hy_prod hyx
+  apply clauseAntichain_eq_of_dominate
+  · exact clauseProduct_subset_right _ _ _ clauseAntichain_smaller
+  · exact clauseProduct_dominate_right a b
 
 @[simp]
 lemma clauseAntichain_eq_self {s : Finset (Clause n)} (h : ∀ x ∈ s, ∀ y ∈ s, x ≤ y → x = y) : clauseAntichain s = s := by
@@ -183,4 +142,4 @@ def Clause.toLex (c : Clause n) : List (Fin n ⊕ Fin n) :=
 
 def clauseLexLe (x y : Clause n) : Prop := x.toLex ≤ y.toLex
 
-end Clause
+end ClauseStuff
