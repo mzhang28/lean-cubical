@@ -7,8 +7,14 @@ name = "Cubical"
 
 [[lean_exe]]
 name = "cubical"
-root = "Main"
+root = "Book"
 
 [[require]]
 name = "mathlib4"
 scope = "leanprover-community"
+rev = "v4.29.1"
+
+[[require]]
+name = "verso"
+git = "https://github.com/leanprover/verso"
+rev = "v4.29.0"

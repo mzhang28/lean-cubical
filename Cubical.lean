@@ -1,3 +1,16 @@
--- This module serves as the root of the `Cubical` library.
--- Import modules here that should be built as part of the library.
+import VersoManual
 import Cubical.Basic
+-- import Cubical.CubeAlg
+
+open Verso.Genre Manual
+open Verso.Genre.Manual.InlineLean
+
+set_option pp.rawOnError true
+
+#doc (Manual) "lean-cubical" =>
+
+%%%
+authors := ["michael zhang"]
+%%%
+
+This is a short book written with Verso's Manual genre.

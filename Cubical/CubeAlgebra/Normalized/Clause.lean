@@ -1,40 +1,7 @@
-import Mathlib
-
--- this is the direct-style implementation
--- this needs to be quotiented by the equivalence relation (below)
--- which spells out all the demorgan laws
-section
-
-inductive DM (n : ℕ) where
-  | zero : DM n
-  | one : DM n
-  | var : Fin n → DM n
-  | meet : DM n → DM n → DM n
-  | join : DM n → DM n → DM n
-  | inv : DM n → DM n
-
-inductive DMRel : DM n → DM n → Prop where
-  | refl (x : DM n) : DMRel x x
-  | symm {x y : DM n} : DMRel x y → DMRel y x
-  | trans {x y z : DM n} : DMRel x y → DMRel y z → DMRel x z
-
-def DMRelEquiv : @Equivalence (DM n) DMRel := {
-  refl := DMRel.refl,
-  symm := DMRel.symm,
-  trans := DMRel.trans,
-}
-
-instance DMSetoid : Setoid (DM n) where
-  r := DMRel
-  iseqv := DMRelEquiv
-
-end section
-
--- this is the normalized implementation
--- thus no need for a quotient
--- downstream should use this
-
-section
+import Mathlib.Algebra.BigOperators.Group.Finset.Defs
+import Mathlib.Data.Finset.Sort
+import Mathlib.Data.Finset.Union
+import Mathlib.Data.Sum.Order
 
 @[ext, grind]
 structure Clause (n : ℕ) where
@@ -52,18 +19,6 @@ instance (x y : Clause n) : Decidable (x ≤ y) :=
   inferInstanceAs (Decidable (x.pos ⊆ y.pos ∧ x.neg ⊆ y.neg))
 
 def Clause.weight (c : Clause n) : ℕ := c.pos.card + c.neg.card
-
-@[ext, grind]
-structure DMN (n : ℕ) where
-  clauses : Finset (Clause n)
-  antichain : ∀ x ∈ clauses, ∀ y ∈ clauses, x ≤ y → x = y
-  deriving DecidableEq
-
-instance : PartialOrder (DMN n) where
-  le := fun x y => ∀ cx ∈ x.clauses, ∃ cy ∈ y.clauses, cy ≤ cx
-  le_refl := by grind only
-  le_trans := by grind only
-  le_antisymm := by grind only [DMN.ext_iff]
 
 -- filters out everything that isn't minimal
 -- aka simplifieds stuff like (x AND y) OR x into just x
@@ -214,18 +169,6 @@ lemma clauseAntichain_clauseProduct_right (a b : Finset (Clause n)) : clauseAnti
       exact ⟨ya, hya, yb, clauseAntichain_smaller hyb, rfl⟩
     exact hmin y hy_prod hyx
 
-
-@[grind]
-def dmnMeet (x y : DMN n) : DMN n :=
-  DMN.mk (clauseAntichain (clauseProduct x.clauses y.clauses)) (by grind only [clauseAntichain, = Finset.mem_filter])
-
-@[grind]
-def dmnTrue : DMN n := DMN.mk (clauseAntichain {Clause.mk ∅ ∅}) (by grind only [clauseAntichain, = Finset.mem_filter, = Finset.mem_singleton])
-
-@[simp]
-lemma dmnTrue_clauses : (dmnTrue : DMN n).clauses = {Clause.mk ∅ ∅} := by
-  grind only [dmnTrue, clauseAntichain, = Finset.mem_filter, = Finset.mem_singleton]
-
 @[simp]
 lemma clauseAntichain_eq_self {s : Finset (Clause n)} (h : ∀ x ∈ s, ∀ y ∈ s, x ≤ y → x = y) : clauseAntichain s = s := by
   grind only [clauseAntichain, = Finset.mem_filter]
@@ -234,65 +177,3 @@ def Clause.toLex (c : Clause n) : List (Fin n ⊕ Fin n) :=
   (c.pos.sort (· ≤ ·)).map Sum.inl ++ (c.neg.sort (· ≤ ·)).map Sum.inr
 
 def clauseLexLe (x y : Clause n) : Prop := x.toLex ≤ y.toLex
-
-instance : CommMonoid (DMN n) where
-  one := dmnTrue
-  mul := dmnMeet
-
-  one_mul := by
-    intros a
-    ext x
-    change x ∈ (dmnMeet dmnTrue a).clauses ↔ x ∈ a.clauses
-    unfold dmnMeet clauseAntichain clauseProduct
-    simp only [dmnTrue_clauses, Finset.singleton_biUnion, Finset.empty_union, Finset.image_id', Finset.mem_filter, and_iff_left_iff_imp]
-    grind only
-
-  mul_one := by
-    intros a
-    ext x
-    change x ∈ (dmnMeet a dmnTrue).clauses ↔ x ∈ a.clauses
-    unfold dmnMeet clauseAntichain clauseProduct
-    simp only [dmnTrue_clauses, Finset.image_singleton, Finset.union_empty, Finset.mem_biUnion, Finset.mem_singleton, exists_eq_right', Finset.mem_filter, and_iff_left_iff_imp]
-    grind only
-
-  mul_assoc := by
-    intros a b c
-    change dmnMeet (dmnMeet a b) c = dmnMeet a (dmnMeet b c)
-    ext x
-    unfold dmnMeet
-    simp only [clauseAntichain_clauseProduct_left, clauseProduct_assoc, clauseAntichain_clauseProduct_right]
-
-  mul_comm := by
-    intros a b
-    change dmnMeet a b = dmnMeet b a
-    ext
-    unfold dmnMeet clauseProduct
-    simp only
-    grind
-
-def dmnJoin (x y : DMN n) : DMN n :=
-  let unioned := x.clauses ∪ y.clauses
-  DMN.mk (clauseAntichain unioned) (by grind only [clauseAntichain, = Finset.mem_filter])
-
--- TODO: implement a more efficient data structure that isn't O(2^n) :skull:
-def clauseInv (c : Clause n) : DMN n :=
-  let pos_inv := c.pos.image (fun p => Clause.mk ∅ {p})
-  let neg_inv := c.neg.image (fun n => Clause.mk {n} ∅)
-  DMN.mk (clauseAntichain (pos_inv ∪ neg_inv)) (by grind only [clauseAntichain, = Finset.mem_filter])
-
-def dmnInv (x : DMN n) : DMN n := x.clauses.prod clauseInv
-
-end
-
-def toNF (t : DM n) : DMN n :=
-  match t with
-  | .zero => DMN.mk ∅ (fun _ h => by contradiction)
-  | .one => DMN.mk
-    {Clause.mk ∅ ∅}
-    (fun x hx y hy p => by simp at hx hy; grind only)
-  | .var n => DMN.mk
-    {Clause.mk {n} ∅}
-    (by simp only [Finset.mem_singleton, forall_eq, Std.le_refl, imp_self])
-  | .meet x y => dmnMeet (toNF x) (toNF y)
-  | .join x y => dmnJoin (toNF x) (toNF y)
-  | .inv t => dmnInv (toNF t)

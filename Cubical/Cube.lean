@@ -1,4 +1,4 @@
-import Mathlib
+import Mathlib.CategoryTheory.Types.Basic
 import Cubical.CubeAlg
 
 open CategoryTheory
@@ -82,4 +82,10 @@ instance CubeCat : Category ℕ where
 -----------------------------------------------------------------------
 -- cubical set
 
-def CubicalSet : Functor _ _ := by sorry
+def CubicalSet : @Functor ℕ CubeCat Type _ := {
+  obj := fun n => DMN n
+  map := fun f fx => _
+}
+
+
+#min_imports
