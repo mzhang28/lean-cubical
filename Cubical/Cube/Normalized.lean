@@ -5,6 +5,7 @@ import Mathlib.Data.Sum.Order
 
 import Cubical.Cube.Normalized.Clause
 
+namespace NormalizedStuff
 open ClauseStuff
 
 -- this is the normalized implementation
@@ -72,8 +73,10 @@ def dmnJoin (x y : DMN n) : DMN n :=
   let unioned := x.clauses ∪ y.clauses
   DMN.mk ⌊ unioned ⌋ (by grind only [clauseAntichain, = Finset.mem_filter])
 
+scoped infixl:80 " ⊔ " => dmnJoin
+
 @[simp]
-lemma dmnJoin_assoc (a b c : DMN n) : dmnJoin (dmnJoin a b) c = dmnJoin a (dmnJoin b c) := by
+lemma dmnJoin_assoc (a b c : DMN n) : (a ⊔ b) ⊔ c = a ⊔ (b ⊔ c) := by
   ext
   unfold dmnJoin
   simp only [clauseAntichain_union_left, clauseAntichain_union_right, Finset.union_assoc]
@@ -100,3 +103,5 @@ def dmnInv (x : DMN n) : DMN n := x.clauses.prod clauseInv
 
 def dmnEval (f : Fin n → DMN n) (x : DMN n) : DMN n :=
   x.clauses.sum fun c => (c.pos.prod f) * (c.neg.prod fun i => dmnInv (f i))
+
+end NormalizedStuff
