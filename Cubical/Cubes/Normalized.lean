@@ -76,3 +76,7 @@ def clauseInv (c : Clause n) : DMN n :=
   DMN.mk ⌊pos_inv ∪ neg_inv ⌋ (by grind only [clauseAntichain, = Finset.mem_filter])
 
 def dmnInv (x : DMN n) : DMN n := x.clauses.prod clauseInv
+
+def dmnEval (f : Fin n → DMN n) (x : DMN n) : DMN n :=
+  let pos := Finset.map ⟨fun cls => cls, _⟩ x.clauses
+  _
