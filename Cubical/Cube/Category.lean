@@ -1,6 +1,6 @@
 -- import Mathlib.CategoryTheory.Category.Basic
 import Mathlib
-import Cubical.Cubes.Normalized
+import Cubical.Cube.Normalized
 
 open CategoryTheory
 
