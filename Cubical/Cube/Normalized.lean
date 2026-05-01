@@ -81,17 +81,58 @@ lemma dmnJoin_assoc (a b c : DMN n) : (a ⊔ b) ⊔ c = a ⊔ (b ⊔ c) := by
   unfold dmnJoin
   simp only [clauseAntichain_union_left, clauseAntichain_union_right, Finset.union_assoc]
 
+@[simp]
+lemma dmnJoin_zero_add (a : DMN n) : dmnFalse ⊔ a = a := by
+  ext x
+  change x ∈ ⌊dmnFalse.clauses ∪ a.clauses⌋ ↔ x ∈ a.clauses
+  simp only [dmnFalse, Finset.empty_union, DMN.antichain_self]
+
+@[simp]
+lemma dmnJoin_add_zero (a : DMN n) : a ⊔ dmnFalse = a := by
+  ext x
+  change x ∈ ⌊a.clauses ∪ dmnFalse.clauses⌋ ↔ x ∈ a.clauses
+  simp only [dmnFalse, Finset.union_empty, DMN.antichain_self]
+
+@[simp]
+lemma dmnJoin_comm (a b : DMN n) : a ⊔ b = b ⊔ a := by
+  ext
+  simp only [dmnJoin, Finset.union_comm]
+
+@[simp]
+lemma dmnJoin_idem (x : DMN n) : dmnJoin x x = x := by
+  ext
+  simp only [dmnJoin, Finset.union_idempotent, DMN.antichain_self]
+
+def dmn_nsmul : ℕ → DMN n → DMN n
+  | 0, _ => dmnFalse
+  | _ + 1, x => x
+
+@[simp]
+lemma dmn_nsmul_zero : ∀ (a : DMN n), dmn_nsmul 0 a = dmnFalse := by
+  intro
+  rfl
+
+@[simp]
+lemma dmn_nsmul_succ : ∀ (k : ℕ) (a : DMN n), dmn_nsmul (k + 1) a = dmnJoin (dmn_nsmul k a) a := by
+  intros k x
+  simp only [dmnJoin_comm]
+  cases k
+  · change x = x ⊔ dmnFalse
+    exact (dmnJoin_add_zero x).symm
+  · unfold dmn_nsmul
+    simp only [dmnJoin_idem]
+
 instance : AddCommMonoid (DMN n) where
   add := dmnJoin
   zero := dmnFalse
-  nsmul := by sorry
+  nsmul := dmn_nsmul
 
   add_assoc := dmnJoin_assoc
-  zero_add := by sorry
-  add_zero := by sorry
-  add_comm := by sorry
-  nsmul_zero := by sorry
-  nsmul_succ := by sorry
+  zero_add := dmnJoin_zero_add
+  add_zero := dmnJoin_add_zero
+  add_comm := dmnJoin_comm
+  nsmul_zero := dmn_nsmul_zero
+  nsmul_succ := dmn_nsmul_succ
 
 -- TODO: implement a more efficient data structure that isn't O(2^n) :skull:
 def clauseInv (c : Clause n) : DMN n :=
