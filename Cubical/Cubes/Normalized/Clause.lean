@@ -103,6 +103,19 @@ lemma clauseAntichain_eq_of_dominate (A B : Finset (Clause n))
   ext x
   repeat constructor <;> grind only [= Finset.subset_iff, clauseAntichain, = Finset.mem_filter]
 
+lemma clauseAntichain_union_right (a b : Finset (Clause n)) : ⌊ a ∪ ⌊ b ⌋ ⌋ = ⌊ a ∪ b ⌋ := by
+  apply clauseAntichain_eq_of_dominate
+  · grind only [= Finset.subset_iff, clauseAntichain, = Finset.mem_union, = Finset.mem_filter]
+  · intros x hx
+    rw [Finset.mem_union] at hx
+    rcases hx with hxa | hxb
+    · exact ⟨x, Finset.mem_union_left _ hxa, le_refl x⟩
+    · obtain ⟨y, hy_anti, hy_le⟩ := exists_antichain_le b x hxb
+      exact ⟨y, Finset.mem_union_right _ hy_anti, hy_le⟩
+
+lemma clauseAntichain_union_left (a b : Finset (Clause n)) : ⌊ ⌊ a ⌋ ∪ b ⌋ = ⌊ a ∪ b ⌋ := by
+  grind only [Finset.union_comm, clauseAntichain_union_right, Finset.union_comm]
+
 lemma clauseProduct_subset_left (A B C : Finset (Clause n)) (h : A ⊆ B) :
     A ⊗ C ⊆ B ⊗ C := by
   grind only [= Finset.subset_iff, clauseProduct, = Finset.mem_biUnion]

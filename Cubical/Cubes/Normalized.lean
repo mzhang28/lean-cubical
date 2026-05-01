@@ -31,6 +31,9 @@ def dmnMeet (x y : DMN n) : DMN n :=
 def dmnTrue : DMN n := DMN.mk ⌊ {Clause.mk ∅ ∅} ⌋ (by grind only [clauseAntichain, = Finset.mem_filter, = Finset.mem_singleton])
 
 @[simp]
+def dmnFalse : DMN n := DMN.mk ∅ (fun _ h => by contradiction)
+
+@[simp]
 lemma dmnTrue_clauses : (dmnTrue : DMN n).clauses = {Clause.mk ∅ ∅} := by
   grind only [dmnTrue, clauseAntichain, = Finset.mem_filter, = Finset.mem_singleton]
 
@@ -69,6 +72,24 @@ def dmnJoin (x y : DMN n) : DMN n :=
   let unioned := x.clauses ∪ y.clauses
   DMN.mk ⌊ unioned ⌋ (by grind only [clauseAntichain, = Finset.mem_filter])
 
+@[simp]
+lemma dmnJoin_assoc (a b c : DMN n) : dmnJoin (dmnJoin a b) c = dmnJoin a (dmnJoin b c) := by
+  ext
+  unfold dmnJoin
+  simp only [clauseAntichain_union_left, clauseAntichain_union_right, Finset.union_assoc]
+
+instance : AddCommMonoid (DMN n) where
+  add := dmnJoin
+  zero := dmnFalse
+  nsmul := by sorry
+
+  add_assoc := dmnJoin_assoc
+  zero_add := by sorry
+  add_zero := by sorry
+  add_comm := by sorry
+  nsmul_zero := by sorry
+  nsmul_succ := by sorry
+
 -- TODO: implement a more efficient data structure that isn't O(2^n) :skull:
 def clauseInv (c : Clause n) : DMN n :=
   let pos_inv := c.pos.image (fun p => Clause.mk ∅ {p})
@@ -78,5 +99,4 @@ def clauseInv (c : Clause n) : DMN n :=
 def dmnInv (x : DMN n) : DMN n := x.clauses.prod clauseInv
 
 def dmnEval (f : Fin n → DMN n) (x : DMN n) : DMN n :=
-  let pos := Finset.map ⟨fun cls => cls, _⟩ x.clauses
-  _
+  x.clauses.sum fun c => (c.pos.prod f) * (c.neg.prod fun i => dmnInv (f i))
