@@ -5,16 +5,12 @@ defaultTargets = ["cubical"]
 [[lean_lib]]
 name = "Cubical"
 
-[[lean_exe]]
-name = "cubical"
-root = "Book"
+[[require]]
+scope = "leanprover"
+name = "doc-gen4"
+rev = "v4.29.1"
 
 [[require]]
 name = "mathlib4"
 scope = "leanprover-community"
 rev = "v4.29.1"
-
-[[require]]
-name = "verso"
-git = "https://github.com/leanprover/verso"
-rev = "v4.29.0"

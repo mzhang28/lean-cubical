@@ -142,7 +142,16 @@ def clauseInv (c : Clause n) : DMN n :=
 
 def dmnInv (x : DMN n) : DMN n := x.clauses.prod clauseInv
 
-def dmnEval (f : Fin n → DMN n) (x : DMN n) : DMN n :=
+def dmnEval (f : Fin m → DMN n) (x : DMN m) : DMN n :=
   x.clauses.sum fun c => (c.pos.prod f) * (c.neg.prod fun i => dmnInv (f i))
+
+@[simp]
+def dmnId (n : ℕ) : Fin n → DMN n := fun i =>
+  DMN.mk {Clause.mk {i} ∅} (by simp only [Finset.mem_singleton, forall_eq, Std.le_refl, imp_self])
+
+lemma dmnEval_id (a : DMN n) : dmnEval (dmnId n) a = a := by
+  unfold dmnEval dmnId
+  ext x
+  sorry
 
 end NormalizedStuff
